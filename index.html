@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>RideNow Paris</title>
+
+    <link
+        href="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css"
+        rel="stylesheet"
+    >
+
+    <script src="https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            font-family: Arial, sans-serif;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .header {
+            position: absolute;
+            z-index: 10;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+
+            background: rgba(5, 25, 20, 0.94);
+            color: white;
+
+            padding: 12px 14px;
+            border-radius: 14px;
+        }
+
+        .brand {
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .brand span {
+            color: #46d369;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 3px;
+        }
+
+        .status {
+            margin-top: 7px;
+            font-size: 12px;
+        }
+
+        .marker {
+            width: 38px;
+            height: 38px;
+
+            border-radius: 50%;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            font-size: 22px;
+
+            background: white;
+            border: 3px solid #092d23;
+
+            cursor: pointer;
+
+            box-shadow:
+                0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .popup-title {
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .popup-location {
+            margin-bottom: 5px;
+        }
+
+        .popup-meta {
+            color: #555;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <div class="brand">
+        RIDE<span>NOW</span> PARIS 🚲
+    </div>
+
+    <div class="subtitle">
+        Les infos des cyclistes, en temps réel.
+    </div>
+
+    <div
+        class="status"
+        id="status"
+    >
+        Chargement des alertes…
+    </div>
+</div>
+
+<div id="map"></div>
+
+<script>
+
+const map = new maplibregl.Map({
+    container: "map",
+
+    style:
+        "https://tiles.openfreemap.org/styles/liberty",
+
+    center: [
+        2.3522,
+        48.8566
+    ],
+
+    zoom: 12.5
+});
+
+map.addControl(
+    new maplibregl.NavigationControl(),
+    "bottom-right"
+);
+
+
+let markers = [];
+
+
+function emojiFromCategory(category) {
+
+    if (
+        category.includes("Travaux")
+    ) {
+        return "🚧";
+    }
+
+    if (
+        category.includes("Danger")
+    ) {
+        return "⚠️";
+    }
+
+    if (
+        category.includes("Accident")
+    ) {
+        return "💥";
+    }
+
+    if (
+        category.includes("sécurité routière")
+    ) {
+        return "👮";
+    }
+
+    return "❓";
+}
+
+
+function timeAgo(dateString) {
+
+    const date = new Date(dateString);
+    const now = new Date();
+
+    const seconds = Math.floor(
+        (now - date) / 1000
+    );
+
+    if (seconds < 60) {
+        return "à l'instant";
+    }
+
+    const minutes = Math.floor(
+        seconds / 60
+    );
+
+    if (minutes < 60) {
+        return `il y a ${minutes} min`;
+    }
+
+    const hours = Math.floor(
+        minutes / 60
+    );
+
+    return `il y a ${hours} h`;
+}
+
+
+function clearMarkers() {
+
+    markers.forEach(
+        marker => marker.remove()
+    );
+
+    markers = [];
+}
+
+
+async function loadAlerts() {
+
+    try {
+
+        const response = await fetch(
+            "/api/alerts"
+        );
+
+        const data = await response.json();
+
+        clearMarkers();
+
+        data.alerts.forEach(alert => {
+
+            const markerElement =
+                document.createElement("div");
+
+            markerElement.className =
+                "marker";
+
+            markerElement.textContent =
+                emojiFromCategory(
+                    alert.category
+                );
+
+            const popup =
+                new maplibregl.Popup({
+                    offset: 25
+                })
+                .setHTML(
+                    `
+                    <div class="popup-title">
+                        ${alert.category}
+                    </div>
+
+                    <div class="popup-location">
+                        📍 ${alert.location_name}
+                    </div>
+
+                    <div class="popup-meta">
+                        👥 ${alert.confirmations}
+                        confirmation(s)
+                        <br>
+                        🕒 ${timeAgo(
+                            alert.created_at
+                        )}
+                    </div>
+                    `
+                );
+
+            const marker =
+                new maplibregl.Marker({
+                    element: markerElement
+                })
+                .setLngLat([
+                    alert.longitude,
+                    alert.latitude
+                ])
+                .setPopup(popup)
+                .addTo(map);
+
+            markers.push(marker);
+
+        });
+
+
+        const status =
+            document.getElementById(
+                "status"
+            );
+
+        if (
+            data.alerts.length === 0
+        ) {
+
+            status.textContent =
+                "🟢 Aucune alerte active";
+
+        } else {
+
+            status.textContent =
+                `🔴 ${
+                    data.alerts.length
+                } alerte(s) active(s)`;
+
+        }
+
+    } catch (error) {
+
+        console.error(error);
+
+        document.getElementById(
+            "status"
+        ).textContent =
+            "⚠️ Impossible de charger les alertes";
+
+    }
+
+}
+
+
+map.on(
+    "load",
+    () => {
+
+        loadAlerts();
+
+        setInterval(
+            loadAlerts,
+            15000
+        );
+
+    }
+);
+
+</script>
+
+</body>
+</html>
