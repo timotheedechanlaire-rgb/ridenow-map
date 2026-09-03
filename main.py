@@ -2,13 +2,10 @@ import os
 
 import psycopg
 from psycopg.rows import dict_row
+
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 
-
-# =========================================================
-# CONFIG
-# =========================================================
 
 DATABASE_URL = os.environ["DATABASE_URL"].strip()
 
@@ -23,18 +20,10 @@ def get_conn():
     )
 
 
-# =========================================================
-# PAGE PRINCIPALE
-# =========================================================
-
 @app.get("/")
 def home():
     return FileResponse("index.html")
 
-
-# =========================================================
-# ALERTES LIVE
-# =========================================================
 
 @app.get("/api/alerts")
 def get_alerts():
@@ -50,6 +39,7 @@ def get_alerts():
                     a.latitude,
                     a.longitude,
                     a.location_name,
+                    COALESCE(a.observed_at, a.created_at) AS observed_at,
                     a.created_at,
                     a.updated_at,
 
@@ -63,7 +53,9 @@ def get_alerts():
 
                 WHERE a.active = TRUE
 
-                ORDER BY a.created_at DESC;
+                ORDER BY
+                    COALESCE(a.observed_at, a.created_at)
+                    DESC;
             """)
 
             alerts = cur.fetchall()
@@ -71,24 +63,21 @@ def get_alerts():
     return {
         "alerts": [
             {
-                "id": alert["id"],
-                "telegram_message_id": alert["telegram_message_id"],
-                "category": alert["category"],
-                "latitude": alert["latitude"],
-                "longitude": alert["longitude"],
-                "location_name": alert["location_name"] or "Paris",
-                "created_at": alert["created_at"].isoformat(),
-                "updated_at": alert["updated_at"].isoformat(),
-                "confirmations": alert["confirmations"],
+                "id": a["id"],
+                "telegram_message_id": a["telegram_message_id"],
+                "category": a["category"],
+                "latitude": a["latitude"],
+                "longitude": a["longitude"],
+                "location_name": a["location_name"] or "Paris",
+                "observed_at": a["observed_at"].isoformat(),
+                "created_at": a["created_at"].isoformat(),
+                "updated_at": a["updated_at"].isoformat(),
+                "confirmations": a["confirmations"],
             }
-            for alert in alerts
+            for a in alerts
         ]
     }
 
-
-# =========================================================
-# HISTORIQUE 7 JOURS
-# =========================================================
 
 @app.get("/api/history")
 def get_history():
@@ -103,7 +92,7 @@ def get_history():
                     a.latitude,
                     a.longitude,
                     a.location_name,
-                    a.created_at,
+                    COALESCE(a.observed_at, a.created_at) AS observed_at,
 
                     (
                         SELECT COUNT(*)
@@ -114,9 +103,18 @@ def get_history():
                 FROM alerts a
 
                 WHERE
-                    a.created_at >= NOW() - INTERVAL '7 days'
+                    COALESCE(
+                        a.observed_at,
+                        a.created_at
+                    )
+                    >= NOW() - INTERVAL '7 days'
 
-                ORDER BY a.created_at DESC;
+                ORDER BY
+                    COALESCE(
+                        a.observed_at,
+                        a.created_at
+                    )
+                    DESC;
             """)
 
             alerts = cur.fetchall()
@@ -124,22 +122,18 @@ def get_history():
     return {
         "alerts": [
             {
-                "id": alert["id"],
-                "category": alert["category"],
-                "latitude": alert["latitude"],
-                "longitude": alert["longitude"],
-                "location_name": alert["location_name"] or "Paris",
-                "created_at": alert["created_at"].isoformat(),
-                "confirmations": alert["confirmations"],
+                "id": a["id"],
+                "category": a["category"],
+                "latitude": a["latitude"],
+                "longitude": a["longitude"],
+                "location_name": a["location_name"] or "Paris",
+                "created_at": a["observed_at"].isoformat(),
+                "confirmations": a["confirmations"],
             }
-            for alert in alerts
+            for a in alerts
         ]
     }
 
-
-# =========================================================
-# HEALTH CHECK
-# =========================================================
 
 @app.get("/health")
 def health():
