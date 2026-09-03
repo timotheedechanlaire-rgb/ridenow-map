@@ -36,10 +36,6 @@
                 sans-serif;
         }
 
-        body {
-            background: #f4f4f4;
-        }
-
         #app {
             position: relative;
             width: 100%;
@@ -51,10 +47,6 @@
             position: absolute;
             inset: 0;
         }
-
-        /* =================================================
-           HEADER NORMAL
-        ================================================= */
 
         #header {
             position: absolute;
@@ -88,10 +80,6 @@
             font-weight: 700;
         }
 
-        /* =================================================
-           LEGEND
-        ================================================= */
-
         #legend {
             position: absolute;
             left: 12px;
@@ -109,10 +97,6 @@
             line-height: 1.7;
         }
 
-        /* =================================================
-           GEO BUTTON
-        ================================================= */
-
         #geo-button {
             position: absolute;
             right: 12px;
@@ -126,7 +110,6 @@
             border-radius: 50%;
 
             background: white;
-
             font-size: 23px;
 
             box-shadow:
@@ -134,10 +117,6 @@
 
             cursor: pointer;
         }
-
-        /* =================================================
-           LOCATION SELECTOR
-        ================================================= */
 
         #selector-ui {
             display: none;
@@ -165,9 +144,7 @@
             z-index: 20;
 
             background: rgba(255, 255, 255, 0.97);
-
             border-radius: 18px;
-
             padding: 13px 16px;
 
             box-shadow:
@@ -187,11 +164,6 @@
             opacity: 0.65;
         }
 
-        /*
-        Le pin est FIXE.
-        C'est la carte que l'utilisateur déplace dessous.
-        */
-
         #center-pin {
             position: absolute;
 
@@ -208,13 +180,12 @@
 
         #center-pin-icon {
             font-size: 46px;
+            line-height: 1;
 
             filter:
                 drop-shadow(
                     0 4px 4px rgba(0, 0, 0, 0.30)
                 );
-
-            line-height: 1;
         }
 
         #pin-dot {
@@ -227,7 +198,6 @@
             height: 8px;
 
             background: rgba(0, 0, 0, 0.22);
-
             border-radius: 50%;
 
             transform:
@@ -247,9 +217,7 @@
             z-index: 30;
 
             background: rgba(255, 255, 255, 0.98);
-
             border-radius: 20px;
-
             padding: 12px;
 
             box-shadow:
@@ -258,11 +226,8 @@
 
         #chosen-position {
             text-align: center;
-
             font-size: 12px;
-
             margin-bottom: 9px;
-
             opacity: 0.65;
         }
 
@@ -275,7 +240,6 @@
             padding: 15px 12px;
 
             background: #111;
-
             color: white;
 
             font-size: 15px;
@@ -283,14 +247,6 @@
 
             cursor: pointer;
         }
-
-        #confirm-location:active {
-            transform: scale(0.99);
-        }
-
-        /* =================================================
-           MARKERS
-        ================================================= */
 
         .alert-marker {
             width: 40px;
@@ -301,14 +257,12 @@
             justify-content: center;
 
             border-radius: 50%;
-
             background: white;
 
             box-shadow:
                 0 3px 12px rgba(0, 0, 0, 0.25);
 
             font-size: 22px;
-
             cursor: pointer;
 
             border: 2px solid rgba(0, 0, 0, 0.08);
@@ -343,10 +297,6 @@
 
     <div id="map"></div>
 
-    <!-- ================================================
-         MODE CARTE LIVE
-    ================================================= -->
-
     <div id="header">
         <div class="brand">
             🚲 RideNow Paris
@@ -368,10 +318,6 @@
         👮 Sécurité routière<br>
         🔥 Tendance 7 jours
     </div>
-
-    <!-- ================================================
-         MODE SELECTION
-    ================================================= -->
 
     <div id="selector-ui">
 
@@ -423,10 +369,6 @@
 
     const BOT_USERNAME = "VeloParisLiveBot";
 
-    /* =====================================================
-       PARAMETRES
-    ===================================================== */
-
     const params = new URLSearchParams(
         window.location.search
     );
@@ -443,17 +385,12 @@
             10
         );
 
-
     if (selectionMode) {
         document.body.classList.add(
             "selection-mode"
         );
     }
 
-
-    /* =====================================================
-       MAP
-    ===================================================== */
 
     const map = new maplibregl.Map({
 
@@ -481,10 +418,6 @@
         "top-right"
     );
 
-
-    /* =====================================================
-       UTILS
-    ===================================================== */
 
     function emojiFromCategory(category) {
 
@@ -532,10 +465,6 @@
             .replaceAll("'", "&#039;");
     }
 
-
-    /* =====================================================
-       GEOLOCATION
-    ===================================================== */
 
     const geoButton =
         document.getElementById("geo-button");
@@ -599,12 +528,6 @@
     );
 
 
-    /*
-    En mode sélection :
-    on essaie automatiquement de centrer la carte
-    sur l'utilisateur.
-    */
-
     if (
         selectionMode &&
         navigator.geolocation
@@ -628,7 +551,6 @@
             },
 
             () => {
-                // On reste centré sur Paris.
             },
 
             {
@@ -641,10 +563,6 @@
 
     }
 
-
-    /* =====================================================
-       MODE SELECTION
-    ===================================================== */
 
     if (selectionMode) {
 
@@ -698,20 +616,22 @@
                 }
 
 
-                const allowedCategories = [
-                    "works",
-                    "danger",
-                    "accident",
-                    "road_safety",
-                    "other"
-                ];
+                const categoryCodes = {
+                    works: "w",
+                    danger: "d",
+                    accident: "a",
+                    road_safety: "s",
+                    other: "o"
+                };
 
 
-                if (
-                    !allowedCategories.includes(
+                const categoryCode =
+                    categoryCodes[
                         selectedCategory
-                    )
-                ) {
+                    ];
+
+
+                if (!categoryCode) {
 
                     alert(
                         "Catégorie incorrecte."
@@ -740,22 +660,20 @@
 
 
                 const latitude =
-                    center.lat.toFixed(5);
+                    Math.round(
+                        center.lat * 100000
+                    );
+
 
                 const longitude =
-                    center.lng.toFixed(5);
+                    Math.round(
+                        center.lng * 100000
+                    );
 
-
-                /*
-                Telegram autorise un petit payload "start".
-                Format :
-
-                loc_category_minutes_lat_lon
-                */
 
                 const payload =
                     "loc_" +
-                    selectedCategory +
+                    categoryCode +
                     "_" +
                     selectedMinutes +
                     "_" +
@@ -768,10 +686,14 @@
                     "https://t.me/" +
                     BOT_USERNAME +
                     "?start=" +
-                    encodeURIComponent(payload);
+                    encodeURIComponent(
+                        payload
+                    );
 
 
-                confirmButton.disabled = true;
+                confirmButton.disabled =
+                    true;
+
 
                 confirmButton.textContent =
                     "↗️ RETOUR VERS RIDENOW…";
@@ -785,10 +707,6 @@
 
     }
 
-
-    /* =====================================================
-       LIVE MARKERS
-    ===================================================== */
 
     let markers = [];
 
@@ -805,11 +723,6 @@
 
 
     async function loadAlerts() {
-
-        /*
-        En mode sélection, on ne charge pas
-        les marqueurs live pour garder l'écran propre.
-        */
 
         if (selectionMode) {
             return;
@@ -920,10 +833,6 @@
     }
 
 
-    /* =====================================================
-       HISTORY / HEATMAP
-    ===================================================== */
-
     async function loadHistory() {
 
         if (selectionMode) {
@@ -973,11 +882,6 @@
                             );
 
 
-                        /*
-                        Plus c'est récent,
-                        plus le poids est fort.
-                        */
-
                         const recencyWeight =
                             Math.max(
                                 0.15,
@@ -986,11 +890,6 @@
                                 (24 * 7)
                             );
 
-
-                        /*
-                        Les confirmations augmentent
-                        légèrement le poids.
-                        */
 
                         const confirmationWeight =
                             Math.min(
@@ -1153,10 +1052,6 @@
     }
 
 
-    /* =====================================================
-       START
-    ===================================================== */
-
     map.on(
         "load",
         () => {
@@ -1168,19 +1063,11 @@
                 loadHistory();
 
 
-                /*
-                Alertes live toutes les 15 secondes.
-                */
-
                 setInterval(
                     loadAlerts,
                     15000
                 );
 
-
-                /*
-                Historique toutes les 5 minutes.
-                */
 
                 setInterval(
                     loadHistory,
